@@ -34,8 +34,8 @@ public abstract class ProtobufSchemaTargetBase : TemplateCodeTargetBase
 
     protected override string GetFileNameWithoutExtByTypeName(string name)
     {
-        name = "config_" + ProtobufCommonTemplateExtension.ToSnake(name.Replace(".", "_"));
-        return name;
+        // name = "cfg_" + ProtobufCommonTemplateExtension.ToSnake(name.Replace(".", "_"));
+        return MyProtobufConfigMgr.GetCodeFileName(name);
     }
 
     protected override void OnCreateTemplateContext(TemplateContext ctx)
@@ -94,7 +94,7 @@ public abstract class ProtobufSchemaTargetBase : TemplateCodeTargetBase
         tplCtx.PushGlobal(new ProtobufCommonTemplateExtension());
         OnCreateTemplateContext(tplCtx);
 
-        var importBeans = new List<DefBean>();
+        var importInfos = new Dictionary<string, ImportInfo>();
         foreach (var bean in beans)
         {
             foreach (var field in bean.ExportFields)
@@ -103,7 +103,13 @@ public abstract class ProtobufSchemaTargetBase : TemplateCodeTargetBase
                 {
                     if (tBean.DefBean.Namespace != @namespace)
                     {
-                        importBeans.Add(tBean.DefBean);
+                        if (!importInfos.TryGetValue(tBean.DefBean.Namespace, out var importInfo))
+                        {
+                            importInfo = new ImportInfo(@namespace);
+                            importInfos[tBean.DefBean.Namespace] = importInfo;
+                        }
+
+                        importInfo.Beans.Add(tBean.DefBean);
                     }
                 }
             }
@@ -116,7 +122,7 @@ public abstract class ProtobufSchemaTargetBase : TemplateCodeTargetBase
             { "__top_module", ctx.TopModule },
             { "__top_module_with_namespace", string.IsNullOrWhiteSpace(@namespace) ? ctx.TopModule : $"{ctx.TopModule}.{@namespace}" },
             { "__tables", tables },
-            { "__import_beans", importBeans },
+            { "__import_infos", importInfos.Values.ToList() },
             { "__beans", beans },
             { "__enums", enums },
             { "__syntax", Syntax },

@@ -2,9 +2,7 @@ syntax = "{{__syntax}}";
 
 package {{__top_module_with_namespace}};
 
-{{~for bean in __import_beans ~}}
-import "config/config_{{bean.namespace}}.proto";
-{{~end~}}
+{{~ get_imports __import_infos ~}}
 
 {{~for enum in __enums ~}}
 enum {{enum.name}} {

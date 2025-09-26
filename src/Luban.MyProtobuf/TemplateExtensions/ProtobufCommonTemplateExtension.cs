@@ -1,5 +1,6 @@
 using Luban.CodeFormat;
 using Luban.Defs;
+using Luban.Protobuf.CodeTarget;
 using Luban.Protobuf.TypeVisitors;
 using Luban.Types;
 using Luban.Utils;
@@ -40,6 +41,11 @@ public class ProtobufCommonTemplateExtension : ScriptObject
         }
 
         return res;
+    }
+
+    public static string GetImports(List<ImportInfo> importInfos)
+    {
+        return MyProtobufConfigMgr.GetCodeImports(importInfos);
     }
 
     public static string ToUpper(string str)
