@@ -88,7 +88,7 @@ public abstract class ProtobufSchemaTargetBase : TemplateCodeTargetBase
 
             GenerateTables(ctx, ctx.ExportTables, ctx.ExportBeans, ctx.ExportEnums, writer);
 
-            return CreateOutputFile($"{MyProtobufConfigMgr.GetTablesCodeFileName()}.{FileSuffixName}", writer.ToResult(FileHeader));
+            return CreateOutputFile($"{MyProtobufConfigMgr.GetTablesCode().OutputFileName}.{FileSuffixName}", writer.ToResult(FileHeader));
         }));
 
         Task.WaitAll(tasks.ToArray());
@@ -115,18 +115,23 @@ public abstract class ProtobufSchemaTargetBase : TemplateCodeTargetBase
             }
             importInfo.Beans.Add(bean);
         }
-        
+
+        var fullName = MyProtobufConfigMgr.GetTablesCode().FullName;
+        var tablesName = fullName.Split('.').Last();
+        var @namespace = fullName.Split('.').SkipLast(1).Aggregate((a, b) => a + "." + b);
 
         var extraEnvs = new ScriptObject
         {
             { "__ctx", ctx },
             { "__top_module", ctx.TopModule },
+            { "__top_module_with_namespace", string.IsNullOrWhiteSpace(@namespace) ? ctx.TopModule : $"{ctx.TopModule}.{@namespace}" },
             { "__tables", tables },
             { "__import_infos", importInfos.Values.ToList() },
             { "__beans", beans },
             { "__enums", enums },
             { "__syntax", Syntax },
-            { "__tables_name", MyProtobufConfigMgr.GetTablesCodeName() }
+            { "__tables_name", tablesName },
+            { "__extra_imports", MyProtobufConfigMgr.GetTablesCode().ExtraImports }
         };
 
         tplCtx.PushGlobal(extraEnvs);

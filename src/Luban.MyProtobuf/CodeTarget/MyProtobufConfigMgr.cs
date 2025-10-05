@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Luban.Defs;
 using Luban.Protobuf.TemplateExtensions;
 using Luban.TemplateExtensions;
 using Scriban;
@@ -42,7 +43,7 @@ public static class MyProtobufConfigMgr
 
     public static string GetCodeFileNameTemplatePath()
     {
-        foreach (var codeFileNameTemplate in Config.CodeFileNameTemplate)
+        foreach (var codeFileNameTemplate in Config.CodeFile)
         {
             if (codeFileNameTemplate.TargetName == "all" || codeFileNameTemplate.TargetName == CurrentTargetName)
             {
@@ -54,7 +55,7 @@ public static class MyProtobufConfigMgr
 
     public static string GetCodeImportsTemplatePath()
     {
-        foreach (var codeImportsTemplate in Config.CodeImportsTemplate)
+        foreach (var codeImportsTemplate in Config.CodeImports)
         {
             if (codeImportsTemplate.TargetName == "all" || codeImportsTemplate.TargetName == CurrentTargetName)
             {
@@ -66,7 +67,7 @@ public static class MyProtobufConfigMgr
 
     public static string GetDataFileExtension()
     {
-        foreach (var dataFileExtension in Config.DataFileExtension)
+        foreach (var dataFileExtension in Config.DataFile)
         {
             if (dataFileExtension.TargetName == "all" || dataFileExtension.TargetName == CurrentTargetName)
             {
@@ -76,25 +77,13 @@ public static class MyProtobufConfigMgr
         return null;
     }
 
-    public static string GetTablesCodeFileName()
+    public static TablesCode GetTablesCode()
     {
         foreach (var tablesCode in Config.TablesCode)
         {
             if (tablesCode.TargetName == "all" || tablesCode.TargetName == CurrentTargetName)
             {
-                return tablesCode.FileName;
-            }
-        }
-        return null;
-    }
-
-    public static string GetTablesCodeName()
-    {
-        foreach (var tablesCode in Config.TablesCode)
-        {
-            if (tablesCode.TargetName == "all" || tablesCode.TargetName == CurrentTargetName)
-            {
-                return tablesCode.CodeName;
+                return tablesCode;
             }
         }
         return null;
@@ -108,6 +97,11 @@ public static class MyProtobufConfigMgr
     public static Template GetCodeImportsTemplate()
     {
         return Template.Parse(File.ReadAllText(GetCodeImportsTemplatePath()));
+    }
+
+    public static Template GetTablePropertyCodeTemplate()
+    {
+        return Template.Parse(File.ReadAllText(GetTablesCode().PropertyTemplatePath));
     }
 
     public static string GetCodeFileName(string typename)
@@ -141,6 +135,24 @@ public static class MyProtobufConfigMgr
 
         ctx.PushGlobal(env);
         var result = GetCodeImportsTemplate().Render(ctx);
+        return result.Trim();
+    }
+
+    public static string GetTablePropertyCode(DefTable table, int autoId)
+    {
+        var ctx = new TemplateContext() { LoopLimit = 0, NewLine = "\n", };
+        ctx.PushGlobal(new ContextTemplateExtension());
+        ctx.PushGlobal(new TypeTemplateExtension());
+        ctx.PushGlobal(new ProtobufCommonTemplateExtension());
+
+        var env = new ScriptObject()
+        {
+            { "__table", table },
+            { "__auto_id", autoId }
+        };
+
+        ctx.PushGlobal(env);
+        var result = GetTablePropertyCodeTemplate().Render(ctx);
         return result.Trim();
     }
 }

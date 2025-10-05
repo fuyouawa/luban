@@ -1,17 +1,21 @@
 ﻿syntax = "{{__syntax}}";
 
-package {{__top_module}};
+package {{__top_module_with_namespace}};
 
 {{~ get_imports __import_infos ~}}
 
-{{ auto_id = 1 }}
+{{ for extra_import in __extra_imports }}
+import "{{extra_import}}";
+{{~ end ~}}
+
+{{~ auto_id = 1 ~}}
 
 message {{ __tables_name }} {
     {{~for table in __tables~}}
     {{~if table.comment != '' ~}}
     // {{escape_comment table.comment}}
     {{~end~}}
-    {{table.full_name}} {{ table.output_data_file }} = {{ auto_id }};
+    {{ get_table_property_code table auto_id }}
     {{~ auto_id = auto_id + 1 ~}}
     {{~end~}}
 }

@@ -48,6 +48,11 @@ public class ProtobufCommonTemplateExtension : ScriptObject
         return MyProtobufConfigMgr.GetCodeImports(importInfos);
     }
 
+    public static string GetTablePropertyCode(DefTable table, int autoId)
+    {
+        return MyProtobufConfigMgr.GetTablePropertyCode(table, autoId);
+    }
+
     public static string ToUpper(string str)
     {
         return ToSnake(str).ToUpper();
