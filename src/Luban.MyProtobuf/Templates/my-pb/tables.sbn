@@ -1,0 +1,17 @@
+﻿syntax = "{{__syntax}}";
+
+package {{__top_module}};
+
+{{~ get_imports __import_infos ~}}
+
+{{ auto_id = 1 }}
+
+message {{ __tables_name }} {
+    {{~for table in __tables~}}
+    {{~if table.comment != '' ~}}
+    // {{escape_comment table.comment}}
+    {{~end~}}
+    {{table.full_name}} {{ table.output_data_file }} = {{ auto_id }};
+    {{~ auto_id = auto_id + 1 ~}}
+    {{~end~}}
+}

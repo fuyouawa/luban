@@ -9,8 +9,8 @@ namespace Luban.Protobuf.CodeTarget;
 public static class MyProtobufConfigMgr
 {
     private static MyProtobufConfig s_config;
-    private static Template s_codeFileNameTemplate = null;
-    private static Template s_codeImportsTemplate = null;
+    
+    public static string CurrentTargetName { get; set; }
 
     public static MyProtobufConfig Config
     {
@@ -26,7 +26,13 @@ public static class MyProtobufConfigMgr
                 else
                 {
                     var text = File.ReadAllText(configPath);
-                    s_config = JsonSerializer.Deserialize<MyProtobufConfig>(text);
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        AllowTrailingCommas = true,
+                        ReadCommentHandling = JsonCommentHandling.Skip,
+                    };
+                    s_config = JsonSerializer.Deserialize<MyProtobufConfig>(text, options);
                 }
             }
 
@@ -34,46 +40,74 @@ public static class MyProtobufConfigMgr
         }
     }
 
-    public static Template CodeFileNameTemplate
+    public static string GetCodeFileNameTemplatePath()
     {
-        get
+        foreach (var codeFileNameTemplate in Config.CodeFileNameTemplate)
         {
-            if (s_codeFileNameTemplate == null)
+            if (codeFileNameTemplate.TargetName == "all" || codeFileNameTemplate.TargetName == CurrentTargetName)
             {
-                if (string.IsNullOrEmpty(Config.CodeFileNameTemplatePath))
-                {
-                    s_codeFileNameTemplate = null;
-                }
-                else
-                {
-                    var text = File.ReadAllText(Config.CodeFileNameTemplatePath);
-                    s_codeFileNameTemplate = Template.Parse(text);
-                }
+                return codeFileNameTemplate.TemplatePath;
             }
-
-            return s_codeFileNameTemplate;
         }
+        return null;
     }
 
-    public static Template CodeImportsTemplate
+    public static string GetCodeImportsTemplatePath()
     {
-        get
+        foreach (var codeImportsTemplate in Config.CodeImportsTemplate)
         {
-            if (s_codeImportsTemplate == null)
+            if (codeImportsTemplate.TargetName == "all" || codeImportsTemplate.TargetName == CurrentTargetName)
             {
-                if (string.IsNullOrEmpty(Config.CodeImportsTemplatePath))
-                {
-                    s_codeImportsTemplate = null;
-                }
-                else
-                {
-                    var text = File.ReadAllText(Config.CodeImportsTemplatePath);
-                    s_codeImportsTemplate = Template.Parse(text);
-                }
+                return codeImportsTemplate.TemplatePath;
             }
-
-            return s_codeImportsTemplate;
         }
+        return null;
+    }
+
+    public static string GetDataFileExtension()
+    {
+        foreach (var dataFileExtension in Config.DataFileExtension)
+        {
+            if (dataFileExtension.TargetName == "all" || dataFileExtension.TargetName == CurrentTargetName)
+            {
+                return dataFileExtension.Extension;
+            }
+        }
+        return null;
+    }
+
+    public static string GetTablesCodeFileName()
+    {
+        foreach (var tablesCode in Config.TablesCode)
+        {
+            if (tablesCode.TargetName == "all" || tablesCode.TargetName == CurrentTargetName)
+            {
+                return tablesCode.FileName;
+            }
+        }
+        return null;
+    }
+
+    public static string GetTablesCodeName()
+    {
+        foreach (var tablesCode in Config.TablesCode)
+        {
+            if (tablesCode.TargetName == "all" || tablesCode.TargetName == CurrentTargetName)
+            {
+                return tablesCode.CodeName;
+            }
+        }
+        return null;
+    }
+
+    public static Template GetCodeFileNameTemplate()
+    {
+        return Template.Parse(File.ReadAllText(GetCodeFileNameTemplatePath()));
+    }
+
+    public static Template GetCodeImportsTemplate()
+    {
+        return Template.Parse(File.ReadAllText(GetCodeImportsTemplatePath()));
     }
 
     public static string GetCodeFileName(string typename)
@@ -89,7 +123,7 @@ public static class MyProtobufConfigMgr
         };
 
         ctx.PushGlobal(env);
-        var result = CodeFileNameTemplate.Render(ctx);
+        var result = GetCodeFileNameTemplate().Render(ctx);
         return result.Trim();
     }
 
@@ -106,7 +140,7 @@ public static class MyProtobufConfigMgr
         };
 
         ctx.PushGlobal(env);
-        var result = CodeImportsTemplate.Render(ctx);
+        var result = GetCodeImportsTemplate().Render(ctx);
         return result.Trim();
     }
 }

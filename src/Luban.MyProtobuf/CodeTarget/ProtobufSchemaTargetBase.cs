@@ -45,6 +45,8 @@ public abstract class ProtobufSchemaTargetBase : TemplateCodeTargetBase
 
     public override void Handle(GenerationContext ctx, OutputFileManifest manifest)
     {
+        MyProtobufConfigMgr.CurrentTargetName = ctx.Target.Name;
+        
         var tasks = new List<Task<OutputFile>>();
 
         var namespaces = new HashSet<string>();
@@ -79,12 +81,57 @@ public abstract class ProtobufSchemaTargetBase : TemplateCodeTargetBase
                 return CreateOutputFile($"{GetFileNameWithoutExtByTypeName(ns)}.{FileSuffixName}", writer.ToResult(FileHeader));
             }));
         }
+        
+        tasks.Add(Task.Run(() =>
+        {
+            var writer = new CodeWriter();
+
+            GenerateTables(ctx, ctx.ExportTables, ctx.ExportBeans, ctx.ExportEnums, writer);
+
+            return CreateOutputFile($"{MyProtobufConfigMgr.GetTablesCodeFileName()}.{FileSuffixName}", writer.ToResult(FileHeader));
+        }));
 
         Task.WaitAll(tasks.ToArray());
         foreach (var task in tasks)
         {
             manifest.AddFile(task.Result);
         }
+    }
+
+    protected string GenerateTables(GenerationContext ctx, List<DefTable> tables, List<DefBean> beans, List<DefEnum> enums, CodeWriter writer)
+    {
+        var template = GetTemplate($"tables");
+        var tplCtx = CreateTemplateContext(template);
+        tplCtx.PushGlobal(new ProtobufCommonTemplateExtension());
+        OnCreateTemplateContext(tplCtx);
+
+        var importInfos = new Dictionary<string, ImportInfo>();
+        foreach (var bean in beans)
+        {
+            if (!importInfos.TryGetValue(bean.Namespace, out var importInfo))
+            {
+                importInfo = new ImportInfo(bean.Namespace);
+                importInfos[bean.Namespace] = importInfo;
+            }
+            importInfo.Beans.Add(bean);
+        }
+        
+
+        var extraEnvs = new ScriptObject
+        {
+            { "__ctx", ctx },
+            { "__top_module", ctx.TopModule },
+            { "__tables", tables },
+            { "__import_infos", importInfos.Values.ToList() },
+            { "__beans", beans },
+            { "__enums", enums },
+            { "__syntax", Syntax },
+            { "__tables_name", MyProtobufConfigMgr.GetTablesCodeName() }
+        };
+
+        tplCtx.PushGlobal(extraEnvs);
+        writer.Write(template.Render(tplCtx));
+        return writer.ToResult(FileHeader);
     }
 
     protected string GenerateSchema(GenerationContext ctx, string @namespace, List<DefTable> tables, List<DefBean> beans, List<DefEnum> enums, CodeWriter writer)
@@ -105,7 +152,7 @@ public abstract class ProtobufSchemaTargetBase : TemplateCodeTargetBase
                     {
                         if (!importInfos.TryGetValue(tBean.DefBean.Namespace, out var importInfo))
                         {
-                            importInfo = new ImportInfo(@namespace);
+                            importInfo = new ImportInfo(tBean.DefBean.Namespace);
                             importInfos[tBean.DefBean.Namespace] = importInfo;
                         }
 
