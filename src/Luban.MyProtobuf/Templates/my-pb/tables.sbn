@@ -15,7 +15,11 @@ message {{ __tables_name }} {
     {{~if table.comment != '' ~}}
     // {{escape_comment table.comment}}
     {{~end~}}
-    {{ get_table_property_code table auto_id }}
+    {{~ if has_custom_table_property_code ~}}
+    {{ get_custom_table_property_code table auto_id }}
+    {{~ else ~}}
+    {{table.full_name}} {{ table.output_data_file }} = {{ auto_id }};
+    {{~end~}}
     {{~ auto_id = auto_id + 1 ~}}
     {{~end~}}
 }

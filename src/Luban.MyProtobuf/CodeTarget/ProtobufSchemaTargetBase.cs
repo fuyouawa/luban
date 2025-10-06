@@ -106,14 +106,14 @@ public abstract class ProtobufSchemaTargetBase : TemplateCodeTargetBase
         OnCreateTemplateContext(tplCtx);
 
         var importInfos = new Dictionary<string, ImportInfo>();
-        foreach (var bean in beans)
+        foreach (var table in tables)
         {
-            if (!importInfos.TryGetValue(bean.Namespace, out var importInfo))
+            if (!importInfos.TryGetValue(table.Namespace, out var importInfo))
             {
-                importInfo = new ImportInfo(bean.Namespace);
-                importInfos[bean.Namespace] = importInfo;
+                importInfo = new ImportInfo(table.Namespace);
+                importInfos[table.Namespace] = importInfo;
             }
-            importInfo.Beans.Add(bean);
+            importInfo.Tables.Add(table);
         }
 
         var fullName = MyProtobufConfigMgr.GetTablesCode().FullName;

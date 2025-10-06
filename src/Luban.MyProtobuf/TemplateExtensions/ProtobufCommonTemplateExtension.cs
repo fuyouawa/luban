@@ -48,7 +48,12 @@ public class ProtobufCommonTemplateExtension : ScriptObject
         return MyProtobufConfigMgr.GetCodeImports(importInfos);
     }
 
-    public static string GetTablePropertyCode(DefTable table, int autoId)
+    public static bool HasCustomTablePropertyCode()
+    {
+        return !string.IsNullOrEmpty(MyProtobufConfigMgr.GetTablesCode().PropertyTemplatePath);
+    }
+
+    public static string GetCustomTablePropertyCode(DefTable table, int autoId)
     {
         return MyProtobufConfigMgr.GetTablePropertyCode(table, autoId);
     }
