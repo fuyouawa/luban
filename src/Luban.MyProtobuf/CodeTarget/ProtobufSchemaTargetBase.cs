@@ -71,13 +71,13 @@ public abstract class ProtobufSchemaTargetBase : TemplateCodeTargetBase
             tasks.Add(Task.Run(() =>
             {
                 var writer = new CodeWriter();
-
+            
                 var tables = ctx.ExportTables.Where(defTable => defTable.Namespace == ns).ToList();
                 var beans = ctx.ExportBeans.Where(defBean => defBean.Namespace == ns).ToList();
                 var enums = ctx.ExportEnums.Where(defEnum => defEnum.Namespace == ns).ToList();
-
+            
                 GenerateSchema(ctx, ns, tables, beans, enums, writer);
-
+            
                 return CreateOutputFile($"{GetFileNameWithoutExtByTypeName(ns)}.{FileSuffixName}", writer.ToResult(FileHeader));
             }));
         }
@@ -151,18 +151,28 @@ public abstract class ProtobufSchemaTargetBase : TemplateCodeTargetBase
         {
             foreach (var field in bean.ExportFields)
             {
+                DefTypeBase fieldType;
                 if (field.CType is TBean tBean)
                 {
-                    if (tBean.DefBean.Namespace != @namespace)
+                    fieldType = tBean.DefBean;
+                }
+                else if (field.CType is TEnum tEnum)
+                {
+                    fieldType = tEnum.DefEnum;
+                }
+                else
+                {
+                    continue;
+                }
+                if (fieldType.Namespace != @namespace)
+                {
+                    if (!importInfos.TryGetValue(fieldType.Namespace, out var importInfo))
                     {
-                        if (!importInfos.TryGetValue(tBean.DefBean.Namespace, out var importInfo))
-                        {
-                            importInfo = new ImportInfo(tBean.DefBean.Namespace);
-                            importInfos[tBean.DefBean.Namespace] = importInfo;
-                        }
-
-                        importInfo.Beans.Add(tBean.DefBean);
+                        importInfo = new ImportInfo(fieldType.Namespace);
+                        importInfos[fieldType.Namespace] = importInfo;
                     }
+
+                    importInfo.Types.Add(fieldType);
                 }
             }
         }
