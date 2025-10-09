@@ -149,30 +149,49 @@ public abstract class ProtobufSchemaTargetBase : TemplateCodeTargetBase
         var importInfos = new Dictionary<string, ImportInfo>();
         foreach (var bean in beans)
         {
-            foreach (var field in bean.ExportFields)
+            if (bean.IsAbstractType)
             {
-                DefTypeBase fieldType;
-                if (field.CType is TBean tBean)
+                foreach (var child in bean.HierarchyNotAbstractChildren)
                 {
-                    fieldType = tBean.DefBean;
-                }
-                else if (field.CType is TEnum tEnum)
-                {
-                    fieldType = tEnum.DefEnum;
-                }
-                else
-                {
-                    continue;
-                }
-                if (fieldType.Namespace != @namespace)
-                {
-                    if (!importInfos.TryGetValue(fieldType.Namespace, out var importInfo))
+                    if (child.Namespace != @namespace)
                     {
-                        importInfo = new ImportInfo(fieldType.Namespace);
-                        importInfos[fieldType.Namespace] = importInfo;
-                    }
+                        if (!importInfos.TryGetValue(child.Namespace, out var importInfo))
+                        {
+                            importInfo = new ImportInfo(child.Namespace);
+                            importInfos[child.Namespace] = importInfo;
+                        }
 
-                    importInfo.Types.Add(fieldType);
+                        importInfo.Types.Add(child);
+                    }
+                }
+            }
+            else
+            {
+                foreach (var field in bean.ExportFields)
+                {
+                    DefTypeBase fieldType;
+                    if (field.CType is TBean tBean)
+                    {
+                        fieldType = tBean.DefBean;
+                    }
+                    else if (field.CType is TEnum tEnum)
+                    {
+                        fieldType = tEnum.DefEnum;
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                    if (fieldType.Namespace != @namespace)
+                    {
+                        if (!importInfos.TryGetValue(fieldType.Namespace, out var importInfo))
+                        {
+                            importInfo = new ImportInfo(fieldType.Namespace);
+                            importInfos[fieldType.Namespace] = importInfo;
+                        }
+
+                        importInfo.Types.Add(fieldType);
+                    }
                 }
             }
         }
